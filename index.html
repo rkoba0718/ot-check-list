@@ -1,0 +1,375 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <title>海外旅行 持ち物チェックリスト</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #f0f2f5;
+      color: #1a1a1a;
+      min-height: 100dvh;
+      padding-bottom: env(safe-area-inset-bottom, 0);
+    }
+
+    .app {
+      max-width: 480px;
+      margin: 0 auto;
+      padding: 16px;
+    }
+
+    header {
+      text-align: center;
+      padding: 24px 0 16px;
+    }
+
+    header h1 {
+      font-size: 20px;
+      font-weight: 700;
+      color: #1a1a1a;
+    }
+
+    .progress {
+      margin-top: 12px;
+      font-size: 13px;
+      color: #666;
+    }
+
+    .progress-bar {
+      height: 6px;
+      background: #e0e0e0;
+      border-radius: 3px;
+      margin-top: 8px;
+      overflow: hidden;
+    }
+
+    .progress-bar-fill {
+      height: 100%;
+      background: #34c759;
+      border-radius: 3px;
+      transition: width 0.3s ease;
+    }
+
+    .add-form {
+      display: flex;
+      gap: 8px;
+      margin: 16px 0;
+    }
+
+    .add-form input {
+      flex: 1;
+      padding: 12px 16px;
+      border: 2px solid #e0e0e0;
+      border-radius: 12px;
+      font-size: 16px;
+      background: #fff;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+
+    .add-form input:focus {
+      border-color: #007aff;
+    }
+
+    .add-form button {
+      padding: 12px 20px;
+      background: #007aff;
+      color: #fff;
+      border: none;
+      border-radius: 12px;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: background 0.2s;
+    }
+
+    .add-form button:active {
+      background: #005ec4;
+    }
+
+    .list {
+      list-style: none;
+    }
+
+    .item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      background: #fff;
+      padding: 14px 16px;
+      border-radius: 12px;
+      margin-bottom: 8px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+      transition: opacity 0.2s;
+    }
+
+    .item.checked {
+      opacity: 0.55;
+    }
+
+    .item input[type="checkbox"] {
+      width: 22px;
+      height: 22px;
+      accent-color: #34c759;
+      cursor: pointer;
+      flex-shrink: 0;
+    }
+
+    .item-text {
+      flex: 1;
+      font-size: 16px;
+      word-break: break-word;
+    }
+
+    .item.checked .item-text {
+      text-decoration: line-through;
+      color: #999;
+    }
+
+    .item-actions {
+      display: flex;
+      gap: 4px;
+      flex-shrink: 0;
+    }
+
+    .btn-icon {
+      width: 36px;
+      height: 36px;
+      border: none;
+      border-radius: 8px;
+      background: transparent;
+      cursor: pointer;
+      font-size: 18px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background 0.2s;
+    }
+
+    .btn-icon:active {
+      background: #f0f0f0;
+    }
+
+    .btn-edit { color: #007aff; }
+    .btn-delete { color: #ff3b30; }
+
+    .edit-form {
+      display: flex;
+      flex: 1;
+      gap: 8px;
+    }
+
+    .edit-form input {
+      flex: 1;
+      padding: 8px 12px;
+      border: 2px solid #007aff;
+      border-radius: 8px;
+      font-size: 16px;
+      outline: none;
+    }
+
+    .edit-form button {
+      padding: 8px 14px;
+      border: none;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    .btn-save {
+      background: #007aff;
+      color: #fff;
+    }
+
+    .btn-cancel {
+      background: #e0e0e0;
+      color: #333;
+    }
+
+    .empty {
+      text-align: center;
+      padding: 48px 16px;
+      color: #999;
+      font-size: 15px;
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <header>
+      <h1>海外旅行 持ち物チェックリスト</h1>
+      <div class="progress">
+        <span id="progress-text">0 / 0 完了</span>
+        <div class="progress-bar">
+          <div class="progress-bar-fill" id="progress-fill" style="width: 0%"></div>
+        </div>
+      </div>
+    </header>
+
+    <form class="add-form" id="add-form">
+      <input type="text" id="add-input" placeholder="持ち物を追加..." autocomplete="off">
+      <button type="submit">追加</button>
+    </form>
+
+    <ul class="list" id="list"></ul>
+    <div class="empty" id="empty">持ち物を追加してください</div>
+  </div>
+
+  <script>
+    const STORAGE_KEY = 'ot-checklist';
+
+    function loadItems() {
+      try {
+        return JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
+      } catch {
+        return [];
+      }
+    }
+
+    function saveItems(items) {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(items));
+    }
+
+    let items = loadItems();
+    let editingId = null;
+
+    const listEl = document.getElementById('list');
+    const emptyEl = document.getElementById('empty');
+    const addForm = document.getElementById('add-form');
+    const addInput = document.getElementById('add-input');
+    const progressText = document.getElementById('progress-text');
+    const progressFill = document.getElementById('progress-fill');
+
+    function generateId() {
+      return Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+    }
+
+    function updateProgress() {
+      const total = items.length;
+      const checked = items.filter(i => i.checked).length;
+      progressText.textContent = `${checked} / ${total} 完了`;
+      progressFill.style.width = total === 0 ? '0%' : `${(checked / total) * 100}%`;
+    }
+
+    function render() {
+      emptyEl.style.display = items.length === 0 ? 'block' : 'none';
+      listEl.innerHTML = '';
+
+      items.forEach(item => {
+        const li = document.createElement('li');
+        li.className = 'item' + (item.checked ? ' checked' : '');
+
+        if (editingId === item.id) {
+          li.innerHTML = `
+            <form class="edit-form" data-id="${item.id}">
+              <input type="text" value="${escapeHtml(item.text)}" autocomplete="off">
+              <button type="submit" class="btn-save">保存</button>
+              <button type="button" class="btn-cancel">戻る</button>
+            </form>
+          `;
+        } else {
+          li.innerHTML = `
+            <input type="checkbox" ${item.checked ? 'checked' : ''} data-id="${item.id}">
+            <span class="item-text">${escapeHtml(item.text)}</span>
+            <div class="item-actions">
+              <button class="btn-icon btn-edit" data-id="${item.id}" title="編集">&#9998;</button>
+              <button class="btn-icon btn-delete" data-id="${item.id}" title="削除">&#10005;</button>
+            </div>
+          `;
+        }
+
+        listEl.appendChild(li);
+      });
+
+      updateProgress();
+
+      if (editingId) {
+        const editInput = listEl.querySelector(`.edit-form[data-id="${editingId}"] input`);
+        if (editInput) editInput.focus();
+      }
+    }
+
+    function escapeHtml(str) {
+      const div = document.createElement('div');
+      div.textContent = str;
+      return div.innerHTML;
+    }
+
+    addForm.addEventListener('submit', e => {
+      e.preventDefault();
+      const text = addInput.value.trim();
+      if (!text) return;
+      items.push({ id: generateId(), text, checked: false });
+      saveItems(items);
+      addInput.value = '';
+      render();
+    });
+
+    listEl.addEventListener('change', e => {
+      if (e.target.type === 'checkbox') {
+        const id = e.target.dataset.id;
+        const item = items.find(i => i.id === id);
+        if (item) {
+          item.checked = e.target.checked;
+          saveItems(items);
+          render();
+        }
+      }
+    });
+
+    listEl.addEventListener('click', e => {
+      const btn = e.target.closest('.btn-edit');
+      if (btn) {
+        editingId = btn.dataset.id;
+        render();
+        return;
+      }
+
+      const delBtn = e.target.closest('.btn-delete');
+      if (delBtn) {
+        const id = delBtn.dataset.id;
+        items = items.filter(i => i.id !== id);
+        saveItems(items);
+        render();
+        return;
+      }
+
+      const cancelBtn = e.target.closest('.btn-cancel');
+      if (cancelBtn) {
+        editingId = null;
+        render();
+      }
+    });
+
+    listEl.addEventListener('submit', e => {
+      e.preventDefault();
+      const form = e.target.closest('.edit-form');
+      if (!form) return;
+      const id = form.dataset.id;
+      const input = form.querySelector('input');
+      const text = input.value.trim();
+      if (!text) return;
+      const item = items.find(i => i.id === id);
+      if (item) {
+        item.text = text;
+        saveItems(items);
+      }
+      editingId = null;
+      render();
+    });
+
+    render();
+  </script>
+</body>
+</html>
