@@ -8,7 +8,7 @@ A simple web app to manage your packing checklist for overseas travel.
 
 https://rkoba0718.github.io/ot-check-list/
 
-<img src="https://github.com/user-attachments/assets/2832888a-aa15-438e-8727-a686d7200e3c" width="300">
+https://github.com/user-attachments/assets/2832888a-aa15-438e-8727-a686d7200e3c
 
 Demonstrates the full workflow: adding items, checking off, editing, and marking as complete.
 
